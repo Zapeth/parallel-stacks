@@ -129,11 +129,13 @@ class Stack:
     def __init__(self):
         self.functions = []
         self.stacks = []
-        self.thread_count = []
+        self.thread_ids = []
 
 
 def fill_stack(node, stack):
-    stack.thread_count = len(node.threads)
+    if len(stack.thread_ids) == 0:
+        for thread in node.threads:
+            stack.thread_ids.append(thread.id)
     if node.function:
         stack.functions.append(node.function)
     if len(node.nodes) == 1:
@@ -151,7 +153,12 @@ def add_stack_to_graph(dot, stack, node_id=0, parent_node_name=None):
     node_name = None
     if len(stack.functions):
         row_template = '<tr><td align="{}">{}</td></tr>'
-        rows += row_template.format('right', '<b>{} Threads</b>'.format(stack.thread_count))
+        # display thread ids in leaf nodes
+        if len(stack.stacks) == 0:
+            rows += row_template.format('right', '<b>{} Threads {}</b>'.format(len(stack.thread_ids), stack.thread_ids))
+        else:
+            rows += row_template.format('right', '<b>{} Threads</b>'.format(len(stack.thread_ids)))
+
         for function in reversed(stack.functions):
             rows += row_template.format('left', '<font color="darkgreen">{}</font>'.format(html.escape(function)))
         table = '<table BORDER="0" CELLBORDER="1" CELLSPACING="0">{}</table>'.format(rows)
