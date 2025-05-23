@@ -62,8 +62,20 @@ def parse_gdb_output(gdb_output):
                 )
                 current_thread.frames.append(frame)
             else:
-                break
-                #raise SyntaxError("gdb output: '{}'".format(gdb_output_line))
+                # special gdb frames only have a text to display
+                match_obj = re.match('#(?P<level>\\d+) +(?P<msg><.+>)', gdb_output_line)
+                if match_obj:
+                    frame = Frame(
+                        level=int(match_obj.group('level')),
+                        address='',
+                        function=match_obj.group('msg'),
+                        parameters='',
+                        filename=''
+                    )
+                    current_thread.frames.append(frame)
+                else:
+                    break
+                    #raise SyntaxError("gdb output: '{}'".format(gdb_output_line))
 
     return threads
 
@@ -174,7 +186,11 @@ def add_stack_to_graph(dot, stack, node_id=0, parent_node_name=None):
                 rows += row_template.format('right', '<b>{} Threads</b>'.format(len(stack.thread_ids)))
 
         for function in reversed(stack.functions):
-            rows += row_template.format('left', '<font color="darkgreen">{}</font>'.format(html.escape(function)))
+            # gray out special entries
+            if function[0] == '<' and function[-1] == '>':
+                rows += row_template.format('left', '<font color="darkgray">{}</font>'.format(html.escape(function)))
+            else:
+                rows += row_template.format('left', '<font color="darkgreen">{}</font>'.format(html.escape(function)))
         table = '<table BORDER="0" CELLBORDER="1" CELLSPACING="0">{}</table>'.format(rows)
         node_name = ''
         if parent_node_name:
