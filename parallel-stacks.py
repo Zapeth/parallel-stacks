@@ -165,6 +165,9 @@ def stacks_contain_tid(stacks, tid):
             return True
     return False
 
+LABEL_TID_LENGTH = 10
+LABEL_FUNC_LENGTH = 80
+
 def add_stack_to_graph(dot, stack, node_id=0, parent_node_name=None):
     rows = ''
     node_name = None
@@ -172,7 +175,10 @@ def add_stack_to_graph(dot, stack, node_id=0, parent_node_name=None):
         row_template = '<tr><td align="{}">{}</td></tr>'
         # display thread ids in leaf nodes
         if len(stack.stacks) == 0:
-            rows += row_template.format('right', '<b>{} Threads {}</b>'.format(len(stack.thread_ids), stack.thread_ids))
+            tids_label = str(stack.thread_ids[:LABEL_TID_LENGTH])
+            if len(stack.thread_ids) > LABEL_TID_LENGTH:
+                tids_label = tids_label[:-1] + ', ...]'
+            rows += row_template.format('right', '<b>{} Threads {}</b>'.format(len(stack.thread_ids), tids_label))
         else:
             # current frame of some threads may be contained within stack of other threads, display those ids as well
             local_tids = []
@@ -181,16 +187,23 @@ def add_stack_to_graph(dot, stack, node_id=0, parent_node_name=None):
                     local_tids.append(tid)
 
             if len(local_tids) > 0:
-                rows += row_template.format('right', '<b>{} Threads {}</b>'.format(len(stack.thread_ids), local_tids))
+                tids_label = str(local_tids[:LABEL_TID_LENGTH])
+                if len(local_tids) > LABEL_TID_LENGTH:
+                    tids_label = tids_label[:-1] + ', ...]'
+                rows += row_template.format('right', '<b>{} Threads {}</b>'.format(len(stack.thread_ids), tids_label))
             else:
                 rows += row_template.format('right', '<b>{} Threads</b>'.format(len(stack.thread_ids)))
 
         for function in reversed(stack.functions):
+            func_label = function[:LABEL_FUNC_LENGTH]
+            if len(function) > LABEL_FUNC_LENGTH:
+                func_label += '...'
             # gray out special entries
             if function[0] == '<' and function[-1] == '>':
-                rows += row_template.format('left', '<font color="darkgray">{}</font>'.format(html.escape(function)))
+                rows += row_template.format('left', '<font color="darkgray">{}</font>'.format(html.escape(func_label)))
             else:
-                rows += row_template.format('left', '<font color="darkgreen">{}</font>'.format(html.escape(function)))
+                rows += row_template.format('left', '<font color="darkgreen">{}</font>'.format(html.escape(func_label)))
+
         table = '<table BORDER="0" CELLBORDER="1" CELLSPACING="0">{}</table>'.format(rows)
         node_name = ''
         if parent_node_name:
