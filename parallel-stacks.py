@@ -147,6 +147,11 @@ def fill_stack(node, stack):
         stack.stacks.append(child_stack)
     assert len(stack.stacks) == 0 or len(stack.stacks) > 1
 
+def stacks_contain_tid(stacks, tid):
+    for stack in stacks:
+        if tid in stack.thread_ids:
+            return True
+    return False
 
 def add_stack_to_graph(dot, stack, node_id=0, parent_node_name=None):
     rows = ''
@@ -157,7 +162,16 @@ def add_stack_to_graph(dot, stack, node_id=0, parent_node_name=None):
         if len(stack.stacks) == 0:
             rows += row_template.format('right', '<b>{} Threads {}</b>'.format(len(stack.thread_ids), stack.thread_ids))
         else:
-            rows += row_template.format('right', '<b>{} Threads</b>'.format(len(stack.thread_ids)))
+            # current frame of some threads may be contained within stack of other threads, display those ids as well
+            local_tids = []
+            for tid in stack.thread_ids:
+                if not stacks_contain_tid(stack.stacks, tid):
+                    local_tids.append(tid)
+
+            if len(local_tids) > 0:
+                rows += row_template.format('right', '<b>{} Threads {}</b>'.format(len(stack.thread_ids), local_tids))
+            else:
+                rows += row_template.format('right', '<b>{} Threads</b>'.format(len(stack.thread_ids)))
 
         for function in reversed(stack.functions):
             rows += row_template.format('left', '<font color="darkgreen">{}</font>'.format(html.escape(function)))
